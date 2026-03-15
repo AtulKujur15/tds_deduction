@@ -20,7 +20,6 @@ The system analyzes transaction details such as payment type, vendor type, PAN a
 - Lower deduction certificate handling
 - Vendor type based deduction logic
 - Transaction history stored in database
-- Dashboard for prediction statistics
 
 ## System Architecture
 
@@ -30,7 +29,7 @@ User Input → Django Web Application → Machine Learning Model → Prediction 
 
 Clone the repository
 
-git clone https://github.com/yourusername/tds-automation-system
+git clone https://github.com/AtulKujur15/tds-automation-system
 
 Install dependencies
 
