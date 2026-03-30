@@ -38,4 +38,7 @@ pip install -r requirements.txt
 Run the server
 
 python manage.py runserver
+<<<<<<< HEAD
 
+=======
+>>>>>>> 4a14ec303c14a58a69a7089e4419243d099cccf4
