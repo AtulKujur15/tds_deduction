@@ -33,5 +33,5 @@ CM=   confusion_matrix(y_test,y_pred)
 print(CM)
 
 
-joblib.dump(model,"tds_model.pkl")
-print("Model Trained Succesfully")
+# joblib.dump(model,"tds_model.pkl")
+# print("Model Trained Succesfully")

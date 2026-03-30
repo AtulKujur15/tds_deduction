@@ -1,112 +1,99 @@
-from django.db import models
-from django.shortcuts import render
-import joblib
 import os
-from .models import Prediction
+import joblib
+from django.shortcuts import render
 
-# Load ML model
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-model_path = os.path.join(BASE_DIR, "..", "model", "tds_model.pkl")
+# =========================
+# LOAD NLP MODEL (CORRECT PATH)
+# =========================
 
-model = joblib.load(model_path)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+model_path = os.path.join(BASE_DIR, "model", "payment_text_model.pkl")
+
+# Check if model exists
+if not os.path.exists(model_path):
+    raise FileNotFoundError(f"Model not found at: {model_path}")
+
+nlp_model = joblib.load(model_path)
+
+
+# =========================
+# HOME PAGE
+# =========================
 
 def home(request):
     return render(request, "index.html")
 
 
-from .models import Prediction
+# =========================
+# PREDICT FUNCTION
+# =========================
 
 def predict(request):
 
     if request.method == "POST":
 
-        payment = int(request.POST['payment'])
+        try:
+            # -------------------------
+            # GET INPUT FROM FORM
+            # -------------------------
+            description = request.POST.get("description", "")
+            amount = float(request.POST.get("amount", 0))
+            vendor = int(request.POST.get("vendor", 0))
+            pan = int(request.POST.get("pan", 1))
+            lower_certificate = int(request.POST.get("lower_certificate", 0))
 
-        amount = float(request.POST['amount'])
+            # -------------------------
+            # NLP MODEL PREDICTION
+            # -------------------------
+            payment_type = nlp_model.predict([description])[0]
 
-        vendor = int(request.POST['vendor'])
+            # -------------------------
+            # TDS RATE LOGIC
+            # -------------------------
+            rate_map = {
+                "rent": 10,
+                "professional": 10,
+                "contractor": 2,
+                "interest": 10
+            }
 
-        pan = int(request.POST['pan'])
+            rate = rate_map.get(payment_type, 10)
 
-        lower_certificate = int(request.POST['lower_certificate'])
+            # -------------------------
+            # PAN RULE (Section 206AA)
+            # -------------------------
+            if pan == 0:
+                rate = 20
 
+            # -------------------------
+            # LOWER DEDUCTION (Section 197)
+            # -------------------------
+            if lower_certificate == 1:
+                rate = rate / 2
 
-        sample = [[payment, amount, vendor, pan]]
+            # -------------------------
+            # TDS CALCULATION
+            # -------------------------
+            tds = amount * rate / 100
 
-        rate = model.predict(sample)[0]
+            # -------------------------
+            # RETURN RESULT
+            # -------------------------
+            return render(request, "result.html", {
+                "payment_type": payment_type.capitalize(),
+                "rate": rate,
+                "tds": round(tds, 2),
+                "amount": amount
+            })
 
+        except Exception as e:
+            return render(request, "result.html", {
+                "payment_type": "Error",
+                "rate": 0,
+                "tds": 0,
+                "amount": 0,
+                "error": str(e)
+            })
 
-        # PAN rule (Section 206AA)
-        if pan == 0:
-            rate = 20
-
-
-        # Lower deduction certificate rule
-        if lower_certificate == 1:
-            rate = rate / 2
-
-
-        tds = amount * rate / 100
-
-
-        # Calculate gross income for vendor
-        gross = Prediction.objects.filter(
-            vendor_type=vendor
-        ).aggregate(total=models.Sum('amount'))
-
-
-        gross_income = gross['total'] if gross['total'] else 0
-
-        gross_income += amount
-
-
-        # Save record
-        Prediction.objects.create(
-
-            payment_type=payment,
-
-            amount=amount,
-
-            vendor_type=vendor,
-
-            pan_available=pan,
-
-            lower_deduction_certificate=lower_certificate,
-
-            gross_income=gross_income,
-
-            tds_rate=rate,
-
-            tds_amount=tds
-        )
-
-
-        return render(request, "result.html", {
-
-            "rate": rate,
-
-            "tds": tds,
-
-            "gross_income": gross_income
-        })
-
-import csv
-from django.http import HttpResponse
-from .models import Prediction
-
-def export_csv(request):
-
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="tds_predictions.csv"'
-
-    writer = csv.writer(response)
-
-    writer.writerow(['Payment Type','Amount','Vendor Type','TDS Rate','TDS Amount','Date'])
-
-    data = Prediction.objects.all()
-
-    for p in data:
-        writer.writerow([p.payment_type,p.amount,p.vendor_type,p.tds_rate,p.tds_amount,p.created_at])
-
-    return response
+    return render(request, "index.html")
