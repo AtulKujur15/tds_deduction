@@ -1,794 +1,709 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>TDS Intelligence — Automated Deduction Engine</title>
+<title>TDS Intelligence — Automated Deduction Predictor</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #080c14;
-  --bg2: #0d1320;
-  --surface: #111827;
-  --surface2: #161f30;
-  --border: rgba(255,255,255,0.07);
-  --border-active: rgba(99,179,237,0.5);
-  --text: #f0f4ff;
-  --text-soft: #8b97b0;
-  --text-mute: #4a5568;
-  --cyan: #63b3ed;
-  --cyan-glow: rgba(99,179,237,0.15);
-  --cyan-dim: rgba(99,179,237,0.06);
-  --amber: #f6ad55;
-  --amber-glow: rgba(246,173,85,0.12);
-  --green: #68d391;
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body: 'Outfit', sans-serif;
+  --blue:        #1a56db;
+  --blue-rich:   #1447b8;
+  --blue-light:  rgba(26,86,219,0.12);
+  --blue-pale:   rgba(26,86,219,0.07);
+  --gold:        #c9963a;
+  --red:         #dc2626;
+  --green:       #059669;
+  --white:       #ffffff;
+  --ink:         #0a1628;
+  --ink-soft:    #2d3f6b;
+  --ink-mid:     #5a6a90;
+  --ink-mute:    #8f9ab8;
+  --ink-faint:   #c0c8dc;
+  /* Glass surfaces */
+  --glass-white:       rgba(255,255,255,0.55);
+  --glass-white-hover: rgba(255,255,255,0.70);
+  --glass-white-deep:  rgba(255,255,255,0.80);
+  --glass-navy:        rgba(8,18,48,0.55);
+  --glass-border:      rgba(255,255,255,0.45);
+  --glass-border-soft: rgba(255,255,255,0.28);
+  --glass-input:       rgba(255,255,255,0.50);
+  --glass-input-focus: rgba(255,255,255,0.80);
+  --shadow-glass: 0 24px 72px rgba(10,22,60,0.18), 0 4px 20px rgba(10,22,60,0.10);
+  --shadow-blue:  0 8px 32px rgba(26,86,219,0.30), 0 2px 8px rgba(26,86,219,0.15);
+  --r-xl: 24px;
+  --r-lg: 16px;
+  --r-md: 11px;
+  --r-sm: 8px;
+  --font-serif: 'Libre Baskerville', Georgia, serif;
+  --font-sans:  'Sora', sans-serif;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  background: var(--bg);
-  font-family: var(--font-body);
-  color: var(--text);
+  font-family: var(--font-sans);
+  color: var(--ink);
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 60px 20px;
+  padding: 48px 16px;
   position: relative;
   overflow-x: hidden;
 }
 
-/* ── Animated canvas background ── */
-#bg-canvas {
+/* ═══════════════════════════════════
+   RICH BACKGROUND
+═══════════════════════════════════ */
+.bg {
   position: fixed;
   inset: 0;
   z-index: 0;
-  opacity: 0.4;
+  /* Layered gradient mesh */
+  background:
+    radial-gradient(ellipse 900px 700px at 10% 15%,  #b8d0ff 0%, transparent 55%),
+    radial-gradient(ellipse 700px 600px at 90% 80%,  #a5f3e8 0%, transparent 50%),
+    radial-gradient(ellipse 600px 500px at 85%  5%,  #c7d9ff 0%, transparent 50%),
+    radial-gradient(ellipse 500px 400px at 15% 85%,  #b2f5ea 0%, transparent 45%),
+    radial-gradient(ellipse 400px 300px at 50% 45%,  #ddd6fe 0%, transparent 40%),
+    linear-gradient(135deg, #d4e4ff 0%, #e8f4f2 40%, #e4d9ff 70%, #cce8f4 100%);
 }
 
-/* ── Noise texture overlay ── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  opacity: 0.025;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* ── Glow orbs ── */
-.orb {
-  position: fixed;
+/* Floating blob shapes */
+.blob {
+  position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-  z-index: 0;
-  animation: drift 12s ease-in-out infinite alternate;
+  filter: blur(2px);
+  mix-blend-mode: multiply;
+  animation: blobDrift ease-in-out infinite alternate;
+  opacity: 0.6;
 }
-.orb-1 { width: 500px; height: 500px; background: radial-gradient(circle, rgba(99,179,237,0.09) 0%, transparent 70%); top: -150px; right: -100px; }
-.orb-2 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(246,173,85,0.07) 0%, transparent 70%); bottom: -100px; left: -80px; animation-delay: -6s; }
-.orb-3 { width: 300px; height: 300px; background: radial-gradient(circle, rgba(104,211,145,0.05) 0%, transparent 70%); top: 50%; left: 50%; animation-delay: -3s; }
+.b1 { width:420px; height:340px; background: radial-gradient(circle, #93c5fd 0%, #60a5fa 60%, transparent 80%); top:-60px; left:-80px; animation-duration:18s; border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%; }
+.b2 { width:380px; height:300px; background: radial-gradient(circle, #6ee7d9 0%, #34d399 60%, transparent 80%); bottom:-40px; right:-60px; animation-duration:22s; animation-delay:-8s; border-radius: 40% 60% 30% 70% / 60% 40% 60% 40%; }
+.b3 { width:300px; height:260px; background: radial-gradient(circle, #a78bfa 0%, #8b5cf6 60%, transparent 80%); top:30%; right:5%; animation-duration:16s; animation-delay:-4s; border-radius: 70% 30% 50% 50% / 40% 60% 40% 60%; }
+.b4 { width:260px; height:220px; background: radial-gradient(circle, #fbbf24 0%, #f59e0b 60%, transparent 80%); bottom:20%; left:8%; animation-duration:20s; animation-delay:-12s; border-radius: 50% 50% 40% 60% / 60% 40% 60% 40%; }
+.b5 { width:200px; height:200px; background: radial-gradient(circle, #f9a8d4 0%, #ec4899 50%, transparent 75%); top:20%; left:35%; animation-duration:24s; animation-delay:-6s; border-radius: 50%; }
 
-@keyframes drift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(30px, -40px) scale(1.08); }
+@keyframes blobDrift {
+  from { transform: translate(0,0) rotate(0deg) scale(1); }
+  to   { transform: translate(30px,-40px) rotate(15deg) scale(1.08); }
 }
 
-/* ── Main layout ── */
+/* Fine noise grain */
+.bg-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+}
+
+/* ═══════════════════════════════════
+   SPLIT CARD
+═══════════════════════════════════ */
 .page {
   position: relative;
   z-index: 2;
   width: 100%;
-  max-width: 620px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  animation: riseIn 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  max-width: 840px;
+  display: grid;
+  grid-template-columns: 268px 1fr;
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-glass);
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(2px);
+  animation: pageIn 0.85s cubic-bezier(0.16,1,0.3,1) both;
 }
-@keyframes riseIn {
-  from { opacity: 0; transform: translateY(40px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes pageIn {
+  from { opacity:0; transform: translateY(40px) scale(0.97); }
+  to   { opacity:1; transform: translateY(0)    scale(1); }
 }
 
-/* ── Top eyebrow ── */
-.eyebrow {
+/* ═══════════════════════════════════
+   LEFT GLASS PANEL
+═══════════════════════════════════ */
+.left {
+  background: var(--glass-navy);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-right: 1px solid rgba(255,255,255,0.12);
+  padding: 40px 28px;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
-  animation: riseIn 0.9s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
 }
-.eyebrow-line {
-  height: 1px;
-  flex: 1;
-  background: linear-gradient(90deg, transparent, rgba(99,179,237,0.3), transparent);
-}
-.eyebrow-text {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cyan);
-  white-space: nowrap;
-}
-.eyebrow-dot {
-  width: 5px; height: 5px;
-  background: var(--cyan);
+
+/* Inner shimmer ring */
+.left::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 280px; height: 280px;
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--cyan);
-  animation: blink 2.5s ease-in-out infinite;
 }
-@keyframes blink {
-  0%,100% { opacity:1; box-shadow: 0 0 8px var(--cyan); }
-  50% { opacity:0.3; box-shadow: 0 0 3px var(--cyan); }
-}
-
-/* ── Card ── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow:
-    0 0 0 1px rgba(99,179,237,0.04),
-    0 30px 80px rgba(0,0,0,0.5),
-    0 8px 32px rgba(0,0,0,0.3),
-    inset 0 1px 0 rgba(255,255,255,0.04);
-  position: relative;
-}
-
-/* Top accent bar */
-.card::before {
+.left::after {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent 0%, var(--cyan) 30%, var(--amber) 70%, transparent 100%);
-  z-index: 10;
-}
-
-/* ── Hero section ── */
-.hero {
-  padding: 44px 48px 40px;
-  position: relative;
-  background: linear-gradient(160deg, var(--surface2) 0%, var(--surface) 100%);
-  border-bottom: 1px solid var(--border);
-  overflow: hidden;
-}
-
-/* Decorative grid */
-.hero::after {
-  content: '';
-  position: absolute;
-  right: -20px; top: -20px;
+  bottom: -80px; left: -80px;
   width: 220px; height: 220px;
-  background-image:
-    linear-gradient(rgba(99,179,237,0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(99,179,237,0.08) 1px, transparent 1px);
-  background-size: 28px 28px;
-  border-radius: 12px;
-  mask-image: radial-gradient(circle at 70% 30%, black 20%, transparent 70%);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 50%;
 }
 
-.hero-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--cyan-dim);
-  border: 1px solid rgba(99,179,237,0.15);
-  border-radius: 99px;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--cyan);
-  margin-bottom: 20px;
-  letter-spacing: 0.04em;
+/* Logo */
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  position: relative; z-index: 1;
+  margin-bottom: 40px;
 }
+.logo-box {
+  width: 38px; height: 38px;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px rgba(59,130,246,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+.logo-box svg { width: 18px; height: 18px; stroke: white; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.logo-name { font-size: 17px; font-weight: 700; color: white; letter-spacing: -0.01em; }
+.logo-name span { color: #93c5fd; }
 
-.hero h1 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 36px;
-  line-height: 1.15;
-  color: var(--text);
+/* Panel headline */
+.panel-h {
+  font-family: var(--font-serif);
+  font-size: 24px; font-weight: 700;
+  color: white; line-height: 1.25;
   letter-spacing: -0.01em;
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
+  margin-bottom: 10px;
 }
-.hero h1 span {
-  font-weight: 400;
-  font-style: italic;
-  color: var(--cyan);
-  display: block;
-}
-
-.hero-desc {
-  margin-top: 14px;
-  font-size: 14px;
+.panel-h em { font-style: italic; font-weight: 400; color: #93c5fd; display: block; }
+.panel-desc {
+  font-size: 12.5px; font-weight: 300;
+  color: rgba(255,255,255,0.45);
   line-height: 1.7;
-  color: var(--text-soft);
-  font-weight: 300;
-  max-width: 380px;
-  position: relative;
-  z-index: 1;
+  position: relative; z-index: 1;
+  margin-bottom: 32px;
 }
 
-/* ── Stats strip ── */
-.stats-strip {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-  background: rgba(0,0,0,0.2);
+/* Stat items */
+.pstats { display: flex; flex-direction: column; gap: 1px; position: relative; z-index: 1; margin-bottom: 32px; }
+.pstat {
+  display: flex; align-items: center; gap: 13px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
-.stat-item {
-  flex: 1;
-  padding: 16px 24px;
-  text-align: center;
-  border-right: 1px solid var(--border);
-}
-.stat-item:last-child { border-right: none; }
-.stat-num {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--cyan);
-  font-family: var(--font-display);
-  letter-spacing: -0.02em;
-}
-.stat-label {
-  font-size: 10px;
-  color: var(--text-mute);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 2px;
-  font-weight: 500;
-}
-
-/* ── Form body ── */
-.form-body {
-  padding: 40px 48px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-
-/* Section groups */
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.section-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 4px;
-}
-.section-head-line {
-  height: 1px;
-  flex: 1;
-  background: var(--border);
-}
-.section-title {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-  white-space: nowrap;
-}
-.section-icon {
-  width: 22px; height: 22px;
-  background: var(--cyan-dim);
-  border: 1px solid rgba(99,179,237,0.15);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.pstat:last-child { border-bottom: none; }
+.pstat-ico {
+  width: 32px; height: 32px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
   flex-shrink: 0;
 }
-.section-icon svg {
-  width: 12px; height: 12px;
-  stroke: var(--cyan);
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.pstat-ico svg { width: 14px; height: 14px; stroke: #93c5fd; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.pstat-n { font-size: 16px; font-weight: 700; color: white; line-height: 1; font-family: var(--font-serif); letter-spacing: -0.02em; }
+.pstat-l { font-size: 10.5px; color: rgba(255,255,255,0.38); font-weight: 400; margin-top: 2px; }
+
+/* Steps */
+.steps { margin-top: auto; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.08); position: relative; z-index: 1; }
+.steps-ttl { font-size: 9.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.28); margin-bottom: 12px; }
+.step { display: flex; align-items: center; gap: 10px; padding: 7px 0; }
+.step-dot {
+  width: 6px; height: 6px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%; flex-shrink: 0;
 }
+.step.on .step-dot { background: #60a5fa; box-shadow: 0 0 8px rgba(96,165,250,0.6); }
+.step-t { font-size: 11.5px; color: rgba(255,255,255,0.32); font-weight: 400; }
+.step.on .step-t { color: rgba(255,255,255,0.75); font-weight: 500; }
+
+/* ═══════════════════════════════════
+   RIGHT GLASS FORM
+═══════════════════════════════════ */
+.right {
+  background: var(--glass-white);
+  backdrop-filter: blur(32px) saturate(200%);
+  -webkit-backdrop-filter: blur(32px) saturate(200%);
+  display: flex; flex-direction: column;
+}
+
+/* Topbar */
+.topbar {
+  padding: 18px 36px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.35);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.topbar-lbl { font-size: 10.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-mute); }
+.live-pill {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10.5px; font-weight: 600; color: var(--green);
+  background: rgba(5,150,105,0.1);
+  border: 1px solid rgba(5,150,105,0.2);
+  border-radius: 99px; padding: 4px 10px;
+}
+.live-dot { width: 5px; height: 5px; background: var(--green); border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.75)} }
+
+/* Form area */
+.form-area {
+  padding: 28px 36px 24px;
+  flex: 1;
+  display: flex; flex-direction: column; gap: 24px;
+  overflow-y: auto;
+}
+
+/* Section */
+.fsec {
+  display: flex; flex-direction: column; gap: 14px;
+  animation: secIn 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+.fsec:nth-child(1){animation-delay:0.10s}
+.fsec:nth-child(2){animation-delay:0.20s}
+.fsec:nth-child(3){animation-delay:0.30s}
+@keyframes secIn { from{opacity:0;transform:translateX(14px)} to{opacity:1;transform:translateX(0)} }
+
+.sec-hd { display: flex; align-items: center; gap: 9px; }
+.sec-num {
+  width: 21px; height: 21px;
+  background: var(--blue);
+  color: white; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(26,86,219,0.3);
+}
+.sec-ttl { font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-mid); }
+.sec-rule { flex: 1; height: 1px; background: rgba(0,0,0,0.08); }
 
 /* Field */
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  animation: riseIn 0.7s cubic-bezier(0.16,1,0.3,1) both;
+.fld { display: flex; flex-direction: column; gap: 6px; }
+.fld-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fld-lbl {
+  font-size: 11.5px; font-weight: 600; color: var(--ink-soft);
+  display: flex; align-items: baseline; gap: 4px;
 }
-.field:nth-child(1) { animation-delay: 0.05s; }
-.field:nth-child(2) { animation-delay: 0.10s; }
-.field:nth-child(3) { animation-delay: 0.15s; }
-.field:nth-child(4) { animation-delay: 0.20s; }
-.field:nth-child(5) { animation-delay: 0.25s; }
+.fld-req { color: var(--red); }
+.fld-hint { font-size: 10.5px; font-weight: 400; color: var(--ink-faint); margin-left: auto; }
 
-.field-label {
-  font-size: 12.5px;
-  font-weight: 500;
-  color: var(--text-soft);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  letter-spacing: 0.01em;
-}
-.field-label-dot {
-  width: 4px; height: 4px;
-  background: var(--cyan);
-  border-radius: 50%;
-  opacity: 0.5;
-}
-
-/* Inputs */
-.input-wrap { position: relative; }
-
-.input-wrap input,
-.input-wrap select {
+/* Glass input */
+.inp { position: relative; }
+.inp input,
+.inp select {
   width: 100%;
-  padding: 14px 18px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  font-family: var(--font-body);
-  font-size: 14.5px;
-  font-weight: 400;
-  color: var(--text);
+  padding: 11px 14px;
+  background: rgba(255,255,255,0.60);
+  border: 1.5px solid rgba(255,255,255,0.70);
+  border-radius: var(--r-md);
+  font-family: var(--font-sans);
+  font-size: 13px; font-weight: 400;
+  color: var(--ink);
   outline: none;
-  transition: all 0.25s ease;
-  -webkit-appearance: none;
-  appearance: none;
-  letter-spacing: 0.01em;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  -webkit-appearance: none; appearance: none;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.04);
+}
+.inp input::placeholder { color: var(--ink-faint); font-weight: 300; font-size: 12.5px; }
+.inp input:hover,
+.inp select:hover {
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(26,86,219,0.25);
+}
+.inp input:focus,
+.inp select:focus {
+  background: rgba(255,255,255,0.92);
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,86,219,0.10), inset 0 1px 2px rgba(0,0,0,0.03);
 }
 
-.input-wrap input::placeholder { color: var(--text-mute); }
-
-.input-wrap input:focus,
-.input-wrap select:focus {
-  border-color: rgba(99,179,237,0.4);
-  background: var(--cyan-glow);
-  box-shadow:
-    0 0 0 3px rgba(99,179,237,0.08),
-    0 4px 20px rgba(0,0,0,0.2);
-}
-
-/* Underline accent on focus */
-.input-wrap::after {
+/* left accent on focus */
+.inp::before {
   content: '';
   position: absolute;
-  bottom: 0; left: 50%; right: 50%;
-  height: 2px;
-  background: linear-gradient(90deg, var(--cyan), var(--amber));
-  border-radius: 0 0 12px 12px;
-  transition: left 0.3s ease, right 0.3s ease;
-  pointer-events: none;
+  left: 0; top: 5px; bottom: 5px;
+  width: 3px; background: var(--blue);
+  border-radius: 99px; opacity: 0;
+  transition: opacity 0.2s; z-index: 2;
 }
-.input-wrap:focus-within::after { left: 0; right: 0; }
+.inp:focus-within::before { opacity: 1; }
+.inp:focus-within input,
+.inp:focus-within select { padding-left: 18px; }
 
-/* Amount prefix */
-.amount-prefix {
-  position: absolute;
-  left: 16px; top: 50%; transform: translateY(-50%);
-  font-size: 16px; font-weight: 600;
-  color: var(--amber);
-  pointer-events: none;
-  z-index: 1;
-  font-family: var(--font-display);
+/* ₹ prefix */
+.pfx {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  font-size: 13.5px; font-weight: 700; color: var(--blue);
+  pointer-events: none; font-family: var(--font-serif); z-index: 3;
+  transition: left 0.2s;
 }
-.input-wrap.has-prefix input { padding-left: 34px; }
+.inp:focus-within .pfx { left: 17px; }
+.inp.has-pfx input { padding-left: 28px; }
+.inp:focus-within.has-pfx input { padding-left: 32px; }
 
-/* Select caret */
-.select-caret {
-  position: absolute;
-  right: 16px; top: 50%; transform: translateY(-50%);
-  pointer-events: none;
-  width: 16px; height: 16px;
+/* Caret */
+.caret { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.caret svg { width: 13px; height: 13px; stroke: var(--ink-mute); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.inp select { padding-right: 36px; cursor: pointer; }
+
+/* Vendor icon chips */
+.vendor-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.vc input[type="radio"] { display: none; }
+.vc-lbl {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 12px 8px 10px;
+  background: rgba(255,255,255,0.50);
+  border: 1.5px solid rgba(255,255,255,0.65);
+  border-radius: var(--r-md);
+  cursor: pointer; text-align: center;
+  font-size: 11px; font-weight: 500; color: var(--ink-mid);
+  backdrop-filter: blur(6px);
+  transition: all 0.2s; user-select: none; line-height: 1.3;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
-.select-caret svg {
-  width: 100%; height: 100%;
-  stroke: var(--cyan);
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-.input-wrap select { padding-right: 44px; cursor: pointer; }
-
-/* Two-column grid */
-.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-/* ── Submit button ── */
-.btn-area { margin-top: 4px; }
-
-.btn-submit {
-  width: 100%;
-  padding: 17px 28px;
-  background: linear-gradient(135deg, #1a4a6b 0%, #0d2d4a 100%);
-  border: 1px solid rgba(99,179,237,0.25);
-  border-radius: 14px;
-  color: #ffffff;
-  font-family: var(--font-body);
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  letter-spacing: 0.04em;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  box-shadow:
-    0 4px 24px rgba(99,179,237,0.15),
-    inset 0 1px 0 rgba(255,255,255,0.08);
-}
-
-.btn-submit::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(99,179,237,0.15) 0%, rgba(246,173,85,0.08) 100%);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-/* Shimmer */
-.btn-submit::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.07), transparent);
-  transition: left 0.6s ease;
-}
-
-.btn-submit:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 40px rgba(99,179,237,0.25),
-    0 2px 12px rgba(0,0,0,0.3),
-    inset 0 1px 0 rgba(255,255,255,0.1);
-  border-color: rgba(99,179,237,0.4);
-}
-.btn-submit:hover::before { opacity: 1; }
-.btn-submit:hover::after { left: 140%; }
-.btn-submit:active { transform: translateY(0); }
-
-.btn-submit .btn-icon {
-  width: 36px; height: 36px;
-  background: rgba(99,179,237,0.15);
-  border: 1px solid rgba(99,179,237,0.2);
+.vc-lbl .vic {
+  width: 30px; height: 30px;
+  background: rgba(0,0,0,0.05);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.3s, transform 0.3s;
-  flex-shrink: 0;
+  transition: all 0.2s;
 }
-.btn-submit:hover .btn-icon {
-  background: rgba(99,179,237,0.25);
-  transform: translateX(3px);
+.vc-lbl .vic svg { width: 14px; height: 14px; stroke: var(--ink-mute); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vc-lbl:hover { background: rgba(255,255,255,0.75); border-color: rgba(26,86,219,0.25); }
+.vc input:checked + .vc-lbl {
+  background: rgba(26,86,219,0.12);
+  border-color: rgba(26,86,219,0.4);
+  color: var(--blue-rich);
+  box-shadow: 0 0 0 2px rgba(26,86,219,0.08), 0 2px 8px rgba(26,86,219,0.1);
 }
-.btn-submit .btn-icon svg {
-  width: 16px; height: 16px;
-  stroke: var(--cyan);
-  fill: none;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.vc input:checked + .vc-lbl .vic { background: rgba(26,86,219,0.15); }
+.vc input:checked + .vc-lbl .vic svg { stroke: var(--blue); }
+
+/* Yes/No chips */
+.chip-row { display: flex; gap: 8px; }
+.chip-opt { flex: 1; }
+.chip-opt input[type="radio"] { display: none; }
+.chip-lbl {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.50);
+  border: 1.5px solid rgba(255,255,255,0.65);
+  border-radius: var(--r-md);
+  cursor: pointer; font-size: 12px; font-weight: 500; color: var(--ink-mid);
+  backdrop-filter: blur(6px);
+  transition: all 0.2s; user-select: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+.chip-lbl svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.chip-lbl:hover { background: rgba(255,255,255,0.78); }
+.chip-opt input:checked + .chip-lbl {
+  background: rgba(26,86,219,0.12);
+  border-color: rgba(26,86,219,0.4);
+  color: var(--blue-rich);
+  box-shadow: 0 0 0 2px rgba(26,86,219,0.08);
+}
+.chip-opt.no input:checked + .chip-lbl {
+  background: rgba(201,150,58,0.1);
+  border-color: rgba(201,150,58,0.4);
+  color: var(--gold);
+  box-shadow: 0 0 0 2px rgba(201,150,58,0.08);
 }
 
-/* ── Footer strip ── */
-.card-footer {
-  padding: 14px 48px;
-  border-top: 1px solid var(--border);
-  background: rgba(0,0,0,0.25);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+/* Info strip */
+.info-strip {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 10px 13px;
+  background: rgba(26,86,219,0.08);
+  border: 1px solid rgba(26,86,219,0.18);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--r-sm);
+  backdrop-filter: blur(6px);
+  font-size: 11px; color: var(--ink-soft); line-height: 1.55;
+  margin-top: -2px;
 }
-.footer-note {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11.5px;
-  color: var(--text-mute);
-  line-height: 1.4;
-}
-.footer-note svg {
-  width: 13px; height: 13px;
-  stroke: var(--amber);
-  fill: none;
-  stroke-width: 2;
-  stroke-linecap: round;
-  flex-shrink: 0;
-}
-.footer-secure {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  color: var(--text-mute);
-  white-space: nowrap;
-}
-.footer-secure svg { width: 11px; height: 11px; stroke: var(--green); fill: none; stroke-width: 2; stroke-linecap: round; }
+.info-strip svg { width: 12px; height: 12px; stroke: var(--blue); fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; margin-top: 1px; }
+.info-strip b { color: var(--blue); font-weight: 600; }
 
-/* ── Responsive ── */
-@media (max-width: 520px) {
-  .hero, .form-body { padding: 32px 28px; }
-  .card-footer { padding: 14px 28px; flex-direction: column; align-items: flex-start; gap: 8px; }
-  .hero h1 { font-size: 28px; }
-  .field-grid { grid-template-columns: 1fr; }
-  .stats-strip { flex-direction: column; }
-  .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
-  .stat-item:last-child { border-bottom: none; }
+/* ═══ SUBMIT ═══ */
+.submit-zone {
+  padding: 0 36px 28px;
+}
+.btn-go {
+  width: 100%;
+  padding: 14px 22px;
+  background: linear-gradient(135deg, #2563eb 0%, #1447b8 100%);
+  border: none; border-radius: var(--r-md);
+  color: white;
+  font-family: var(--font-sans);
+  font-size: 14px; font-weight: 700; letter-spacing: 0.025em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 11px;
+  position: relative; overflow: hidden;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-blue);
+}
+/* Glass sheen */
+.btn-go::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 48%;
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 100%);
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  pointer-events: none;
+}
+/* Shimmer */
+.btn-go::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.18) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.55s ease;
+}
+.btn-go:hover { transform: translateY(-2px); box-shadow: 0 14px 44px rgba(26,86,219,0.35), 0 3px 12px rgba(26,86,219,0.2); }
+.btn-go:hover::after { transform: translateX(100%); }
+.btn-go:active { transform: translateY(0); }
+.btn-ico {
+  width: 30px; height: 30px;
+  background: rgba(255,255,255,0.18); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: transform 0.25s;
+}
+.btn-go:hover .btn-ico { transform: translateX(4px); }
+.btn-ico svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.btn-sub { font-size: 10.5px; font-weight: 400; opacity: 0.6; margin-left: auto; letter-spacing: 0.01em; }
+
+/* ═══ FOOTER ═══ */
+.foot {
+  padding: 12px 36px;
+  border-top: 1px solid rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.3);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.foot-note { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--ink-faint); }
+.foot-note svg { width: 11px; height: 11px; stroke: var(--gold); fill: none; stroke-width: 2; stroke-linecap: round; flex-shrink: 0; }
+.foot-tags { display: flex; gap: 6px; }
+.foot-tag {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 500; color: var(--ink-mute);
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 99px;
+  backdrop-filter: blur(4px);
+}
+.foot-tag svg { width: 9px; height: 9px; stroke: var(--green); fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 680px) {
+  .page { grid-template-columns: 1fr; max-width: 440px; }
+  .left { display: none; }
+  .topbar, .form-area, .submit-zone, .foot { padding-left: 22px; padding-right: 22px; }
+  .fld-row { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 <body>
 
-<div class="orb orb-1"></div>
-<div class="orb orb-2"></div>
-<div class="orb orb-3"></div>
-<canvas id="bg-canvas"></canvas>
+<!-- Rich background -->
+<div class="bg">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+  <div class="blob b5"></div>
+  <div class="bg-grain"></div>
+</div>
 
+<!-- Split glass card -->
 <div class="page">
-  <!-- Eyebrow -->
-  <div class="eyebrow">
-    <div class="eyebrow-line"></div>
-    <div class="eyebrow-dot"></div>
-    <span class="eyebrow-text">TDS Intelligence Engine · India Tax Compliance</span>
-    <div class="eyebrow-dot"></div>
-    <div class="eyebrow-line"></div>
+
+  <!-- ══ LEFT ══ -->
+  <div class="left">
+
+    <div class="logo">
+      <div class="logo-box">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="logo-name">TDS<span>Intel</span></div>
+    </div>
+
+    <div class="panel-h">Smart Tax<br>Deduction <em>at Source</em></div>
+    <p class="panel-desc">AI-powered engine that classifies your payment and computes the applicable TDS rate instantly — compliant with the Income Tax Act.</p>
+
+    <div class="pstats">
+      <div class="pstat">
+        <div class="pstat-ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div><div class="pstat-n">194+</div><div class="pstat-l">TDS Sections Covered</div></div>
+      </div>
+      <div class="pstat">
+        <div class="pstat-ico"><svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+        <div><div class="pstat-n">&lt;1s</div><div class="pstat-l">Instant Prediction</div></div>
+      </div>
+      <div class="pstat">
+        <div class="pstat-ico"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <div><div class="pstat-n">99.2%</div><div class="pstat-l">Accuracy Rate</div></div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="steps-ttl">Process</div>
+      <div class="step on"><div class="step-dot"></div><div class="step-t">Enter payment details</div></div>
+      <div class="step on"><div class="step-dot"></div><div class="step-t">Select vendor profile</div></div>
+      <div class="step on"><div class="step-dot"></div><div class="step-t">Set compliance flags</div></div>
+      <div class="step">    <div class="step-dot"></div><div class="step-t">Receive instant result</div></div>
+    </div>
   </div>
 
-  <div class="card">
-    <!-- Accent bar via ::before -->
+  <!-- ══ RIGHT ══ -->
+  <div class="right">
 
-    <!-- Hero -->
-    <div class="hero">
-      <div class="hero-tag">
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        AI-Powered Prediction
-      </div>
-      <h1>
-        Automated TDS
-        <span>Deduction Predictor</span>
-      </h1>
-      <p class="hero-desc">Enter your payment details and let our intelligent engine determine the applicable TDS section, rate, and deduction in real time.</p>
+    <div class="topbar">
+      <span class="topbar-lbl">New Prediction</span>
+      <div class="live-pill"><span class="live-dot"></span>Engine Active</div>
     </div>
 
-    <!-- Stats strip -->
-    <div class="stats-strip">
-      <div class="stat-item">
-        <div class="stat-num">194+</div>
-        <div class="stat-label">TDS Sections</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">&lt;1s</div>
-        <div class="stat-label">Prediction Time</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-num">99.2%</div>
-        <div class="stat-label">Accuracy Rate</div>
-      </div>
-    </div>
-
-    <!-- Form -->
-    <div class="form-body">
-      <form method="post" action="/predict">
+    <div class="form-area">
+      <form method="post" action="/predict" id="tds-form">
         {% csrf_token %}
 
-        <!-- Payment Info -->
-        <div class="form-section">
-          <div class="section-head">
-            <div class="section-icon">
-              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            </div>
-            <div class="section-title">Payment Information</div>
-            <div class="section-head-line"></div>
+        <!-- 1 · Payment -->
+        <div class="fsec">
+          <div class="sec-hd">
+            <div class="sec-num">1</div>
+            <div class="sec-ttl">Payment Details</div>
+            <div class="sec-rule"></div>
           </div>
 
-          <div class="field">
-            <div class="field-label">
-              <span class="field-label-dot"></span>
-              Payment Description
-            </div>
-            <div class="input-wrap">
-              <input type="text"
-                     name="description"
-                     placeholder="e.g. Legal consultancy, rent, professional fees…"
-                     required>
+          <div class="fld">
+            <div class="fld-lbl">Description <span class="fld-req">*</span><span class="fld-hint">Nature of payment</span></div>
+            <div class="inp">
+              <input type="text" name="description" placeholder="e.g. Legal consultancy, contract labour, rent…" required autocomplete="off">
             </div>
           </div>
 
-          <div class="field">
-            <div class="field-label">
-              <span class="field-label-dot"></span>
-              Transaction Amount
-            </div>
-            <div class="input-wrap has-prefix">
-              <span class="amount-prefix">₹</span>
+          <div class="fld">
+            <div class="fld-lbl">Transaction Amount <span class="fld-req">*</span></div>
+            <div class="inp has-pfx">
+              <span class="pfx">₹</span>
               <input type="number" name="amount" placeholder="0.00" min="0" step="0.01" required>
             </div>
           </div>
         </div>
 
-        <!-- Vendor -->
-        <div class="form-section">
-          <div class="section-head">
-            <div class="section-icon">
-              <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <div class="section-title">Vendor Profile</div>
-            <div class="section-head-line"></div>
+        <!-- 2 · Vendor -->
+        <div class="fsec">
+          <div class="sec-hd">
+            <div class="sec-num">2</div>
+            <div class="sec-ttl">Vendor / Payee Type</div>
+            <div class="sec-rule"></div>
           </div>
 
-          <div class="field">
-            <div class="field-label">
-              <span class="field-label-dot"></span>
-              Vendor Type
-            </div>
-            <div class="input-wrap">
-              <select name="vendor">
-                <option value="0">Individual / Sole Proprietor</option>
-                <option value="1">Company / Firm / LLP</option>
-                <option value="2">Employee (Salary)</option>
-              </select>
-              <div class="select-caret">
-                <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          <div class="fld">
+            <div class="fld-lbl">Select vendor category</div>
+            <div class="vendor-grid">
+              <div class="vc">
+                <input type="radio" name="vendor" id="v0" value="0" checked>
+                <label class="vc-lbl" for="v0">
+                  <div class="vic"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+                  Individual
+                </label>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Compliance -->
-        <div class="form-section">
-          <div class="section-head">
-            <div class="section-icon">
-              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </div>
-            <div class="section-title">Compliance Flags</div>
-            <div class="section-head-line"></div>
-          </div>
-
-          <div class="field-grid">
-            <div class="field">
-              <div class="field-label">
-                <span class="field-label-dot"></span>
-                PAN Available
+              <div class="vc">
+                <input type="radio" name="vendor" id="v1" value="1">
+                <label class="vc-lbl" for="v1">
+                  <div class="vic"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></div>
+                  Company
+                </label>
               </div>
-              <div class="input-wrap">
-                <select name="pan">
-                  <option value="1">✓ Yes — PAN Provided</option>
-                  <option value="0">✗ No — PAN Missing</option>
-                </select>
-                <div class="select-caret">
-                  <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-              </div>
-            </div>
-
-            <div class="field">
-              <div class="field-label">
-                <span class="field-label-dot"></span>
-                Lower Deduction Cert.
-              </div>
-              <div class="input-wrap">
-                <select name="lower_certificate">
-                  <option value="0">✗ Not Applicable</option>
-                  <option value="1">✓ Certificate Held</option>
-                </select>
-                <div class="select-caret">
-                  <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
+              <div class="vc">
+                <input type="radio" name="vendor" id="v2" value="2">
+                <label class="vc-lbl" for="v2">
+                  <div class="vic"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                  Employee
+                </label>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Submit -->
-        <div class="btn-area">
-          <button type="submit" class="btn-submit">
-            Run TDS Prediction
-            <div class="btn-icon">
-              <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <!-- 3 · Compliance -->
+        <div class="fsec">
+          <div class="sec-hd">
+            <div class="sec-num">3</div>
+            <div class="sec-ttl">Compliance Flags</div>
+            <div class="sec-rule"></div>
+          </div>
+
+          <div class="fld-row">
+            <div class="fld">
+              <div class="fld-lbl">PAN Available?</div>
+              <div class="chip-row">
+                <div class="chip-opt">
+                  <input type="radio" name="pan" id="pan1" value="1" checked>
+                  <label class="chip-lbl" for="pan1"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Yes</label>
+                </div>
+                <div class="chip-opt no">
+                  <input type="radio" name="pan" id="pan0" value="0">
+                  <label class="chip-lbl" for="pan0"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No</label>
+                </div>
+              </div>
             </div>
-          </button>
+
+            <div class="fld">
+              <div class="fld-lbl">Lower Deduction Cert.?</div>
+              <div class="chip-row">
+                <div class="chip-opt">
+                  <input type="radio" name="lower_certificate" id="lc1" value="1">
+                  <label class="chip-lbl" for="lc1"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Yes</label>
+                </div>
+                <div class="chip-opt no">
+                  <input type="radio" name="lower_certificate" id="lc0" value="0" checked>
+                  <label class="chip-lbl" for="lc0"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No</label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-strip">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>If PAN is unavailable, TDS is deducted at <b>20%</b> or the applicable rate (whichever is higher) under <b>Section 206AA</b>.</span>
+          </div>
         </div>
 
       </form>
     </div>
 
+    <!-- Submit -->
+    <div class="submit-zone">
+      <button type="submit" form="tds-form" class="btn-go">
+        Predict TDS Deduction
+        <span class="btn-sub">Powered by AI</span>
+        <div class="btn-ico">
+          <svg viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </button>
+    </div>
+
     <!-- Footer -->
-    <div class="card-footer">
-      <div class="footer-note">
+    <div class="foot">
+      <div class="foot-note">
         <svg viewBox="0 0 24 24" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        Indicative only. Verify all deductions with a qualified CA.
+        Indicative only. Verify with a qualified CA.
       </div>
-      <div class="footer-secure">
-        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-        Secure & encrypted
+      <div class="foot-tags">
+        <div class="foot-tag"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> SSL Secured</div>
+        <div class="foot-tag"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> ITACT 2024</div>
       </div>
     </div>
+
   </div>
 </div>
 
-<script>
-// Animated particle grid on canvas
-const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-
-let W, H, particles = [];
-
-function resize() {
-  W = canvas.width = window.innerWidth;
-  H = canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-
-function createParticles(n) {
-  particles = [];
-  for (let i = 0; i < n; i++) {
-    particles.push({
-      x: Math.random() * W,
-      y: Math.random() * H,
-      r: Math.random() * 1.5 + 0.5,
-      vx: (Math.random() - 0.5) * 0.2,
-      vy: (Math.random() - 0.5) * 0.2,
-      a: Math.random() * 0.4 + 0.1,
-      c: Math.random() > 0.6 ? '#63b3ed' : '#f6ad55'
-    });
-  }
-}
-createParticles(80);
-
-function draw() {
-  ctx.clearRect(0, 0, W, H);
-
-  // Draw connection lines
-  for (let i = 0; i < particles.length; i++) {
-    for (let j = i + 1; j < particles.length; j++) {
-      const dx = particles[i].x - particles[j].x;
-      const dy = particles[i].y - particles[j].y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < 120) {
-        ctx.beginPath();
-        ctx.strokeStyle = `rgba(99,179,237,${0.06 * (1 - dist/120)})`;
-        ctx.lineWidth = 0.5;
-        ctx.moveTo(particles[i].x, particles[i].y);
-        ctx.lineTo(particles[j].x, particles[j].y);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Draw particles
-  for (const p of particles) {
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fillStyle = p.c.replace(')', `,${p.a})`).replace('rgb', 'rgba').replace('#63b3ed', 'rgba(99,179,237,' + p.a + ')').replace('#f6ad55','rgba(246,173,85,'+p.a+')');
-    ctx.fill();
-
-    p.x += p.vx;
-    p.y += p.vy;
-    if (p.x < 0 || p.x > W) p.vx *= -1;
-    if (p.y < 0 || p.y > H) p.vy *= -1;
-  }
-
-  requestAnimationFrame(draw);
-}
-draw();
-</script>
 </body>
 </html>
